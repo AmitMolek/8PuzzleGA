@@ -1,9 +1,10 @@
 import numpy as np
+import math
 
-def ga(gaObj, init_pop, 
-       fitness_sort, fitness_func, 
-       pop_size, max_generation, 
-       elitism_factor):
+def ga(init_pop, fitness_sort, 
+       fitness_func, pop_size, 
+       max_generation, elitism_factor,
+       crossover_op, mutation_op):
 
     # Initialize the population
     population = init_pop(pop_size)
@@ -20,18 +21,24 @@ def ga(gaObj, init_pop,
 
         # If the first object in the sorted population has fitness of 0
         # we found the solution
-        if (population[0].fitness <= 0):
+        if (population[0].fitness == 0):
             found = True
             break
 
         # Calculates how many citizens will survive for the next generation
         # Using the formula for percentage
         # Part = (Whole * Percentage) / 100
-        citizens_survived = (elitism_factor * pop_size) / 100
+        # Rounding up for nice integer numbers :)
+        citizens_survived = math.ceil(((elitism_factor * pop_size) / 100))
+        # The new population is the top performing citizens (from 0-citizens survived)
         new_population = sorted_population[0:citizens_survived]
-        
 
-    print(population)  
+
+
+        # Another generation passed
+        current_generation += 1
+
+    #print(population)  
 
 class PuzzleChromosome:
     chromosome = np.empty(0)
@@ -40,6 +47,24 @@ class PuzzleChromosome:
     def __init__(self, chromosome, fitness):
         self.chromosome = chromosome
         self.fitness = fitness
+
+    # ==
+    def __eq__(self, value):
+        if (type(value) is not PuzzleChromosome):
+            return False
+        return (self.fitness == value.fitness)
+
+    # <
+    def __lt__(self, value):
+        if (type(value) is not PuzzleChromosome):
+            return False
+        return (self.fitness < value.fitness)
+
+    # >
+    def __gt__(self, value):
+        if (type(value) is not PuzzleChromosome):
+            return False
+        return (self.fitness > value.fitness)
 
     def __repr__(self):
         return '({}, {})'.format(self.chromosome, self.fitness)
@@ -63,8 +88,17 @@ def fitness_sort(population, fitness_func):
     for pc in population:
         pc.fitness = fitness_func(pc.chromosome)
 
-    print(population)
+    return population[population.argsort()]
 
-#ga(int)
-pop = init_pop(3)
-fitness_sort(pop, fitness_func)
+def crossover_op(parent1, parent2):
+    from_parent1 = np.array([0, 0, 0, 0, 1, 1, 1, 1, 1])
+    np.random.shuffle(from_parent1)
+    from_parent2 = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1])
+    from_parent2 = from_parent2 - from_parent1
+    taken_from_p1 = parent1 * from_parent1
+    taken_from_p2 = parent2 * from_parent2
+    return (taken_from_p1 + taken_from_p2)
+
+
+#ga(init_pop, fitness_sort, fitness_func, 3, 5, 10)
+crossover_op(np.array([1, 2, 3, 4, 5, 6, 7, 8, 9]), np.array([1, 2, 3, 4, 5, 6, 7, 8, 9]))
