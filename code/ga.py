@@ -1,10 +1,12 @@
 import numpy as np
 import math
+import random as rnd
 
 def ga(init_pop, fitness_sort, 
        fitness_func, pop_size, 
        max_generation, elitism_factor,
-       crossover_op, mutation_op):
+       crossover_op, mutation_op,
+       mutation_factor):
 
     # Initialize the population
     population = init_pop(pop_size)
@@ -33,72 +35,31 @@ def ga(init_pop, fitness_sort,
         # The new population is the top performing citizens (from 0-citizens survived)
         new_population = sorted_population[0:citizens_survived]
 
+        # Count of how many offspring we need to create to repopulate the generation
+        mate_count = pop_size - citizens_survived
+        for i in range(mate_count):
+            # Choosing the randomly the parents to mate
+            parent_1 = np.random.choice(new_population, 1)[0]
+            parent_2 = np.random.choice(new_population, 1)[0]
+            # Creating the offspring using the parents genes
+            offspring = crossover_op(parent_1.chromosome, parent_2.chromosome)
+            # Inserting mutation (based on probability)
+            if rnd.random() < mutation_factor:
+                offspring.chromosome = mutation_op(offspring.chromosome)
+            # Adding the new offspring to the new population
+            new_population = np.append(new_population, offspring)
 
-
+        # Making the new generation the current one
+        population = new_population
         # Another generation passed
         current_generation += 1
 
-    #print(population)  
-
-class PuzzleChromosome:
-    chromosome = np.empty(0)
-    fitness = -1
-
-    def __init__(self, chromosome, fitness):
-        self.chromosome = chromosome
-        self.fitness = fitness
-
-    # ==
-    def __eq__(self, value):
-        if (type(value) is not PuzzleChromosome):
-            return False
-        return (self.fitness == value.fitness)
-
-    # <
-    def __lt__(self, value):
-        if (type(value) is not PuzzleChromosome):
-            return False
-        return (self.fitness < value.fitness)
-
-    # >
-    def __gt__(self, value):
-        if (type(value) is not PuzzleChromosome):
-            return False
-        return (self.fitness > value.fitness)
-
-    def __repr__(self):
-        return '({}, {})'.format(self.chromosome, self.fitness)
-
-def init_pop(pop_size):
-    population = np.empty(0, dtype=PuzzleChromosome)
-    for i in range(0, pop_size):
-        options = np.arange(9)
-        np.random.shuffle(options)
-        item = PuzzleChromosome(options, -1)
-        population = np.append(population, item)
-
-    return population.reshape(pop_size)
     print(population)
 
-def fitness_func(chromosome):
-    mul_vec = np.array([1, -1, 1, -1, 1, -1, 1, -1, 1]).reshape([9, 1])
-    return (chromosome @ mul_vec)[0]
 
-def fitness_sort(population, fitness_func):
-    for pc in population:
-        pc.fitness = fitness_func(pc.chromosome)
+#ga(init_pop, fitness_sort, fitness_func, 20, 5, 10, crossover_op, mutation_op, 1)
 
-    return population[population.argsort()]
-
-def crossover_op(parent1, parent2):
-    from_parent1 = np.array([0, 0, 0, 0, 1, 1, 1, 1, 1])
-    np.random.shuffle(from_parent1)
-    from_parent2 = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1])
-    from_parent2 = from_parent2 - from_parent1
-    taken_from_p1 = parent1 * from_parent1
-    taken_from_p2 = parent2 * from_parent2
-    return (taken_from_p1 + taken_from_p2)
-
-
-#ga(init_pop, fitness_sort, fitness_func, 3, 5, 10)
-crossover_op(np.array([1, 2, 3, 4, 5, 6, 7, 8, 9]), np.array([1, 2, 3, 4, 5, 6, 7, 8, 9]))
+#c1 = np.array([1,2,3,4,5,6,7,8,9])
+#np.random.shuffle(c1)
+#crossover_op(np.array([1, 2, 3, 4, 5, 6, 7, 8, 9]), np.array([1, 2, 3, 4, 5, 6, 7, 8, 9]))
+#mutation_op(c1)
