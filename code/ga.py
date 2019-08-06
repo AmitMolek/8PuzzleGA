@@ -49,8 +49,10 @@ def ga(init_pop, fitness_sort,
             # Adding the new offspring to the new population
             new_population = np.append(new_population, offspring)
 
+        print("Gen = {} | Fitness = {}".format(current_generation, population[0].fitness))
         # Making the new generation the current one
         population = new_population
+        pop_size = np.size(population)
         # Another generation passed
         current_generation += 1
 

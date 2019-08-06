@@ -1,4 +1,62 @@
 import numpy as np
+import random as rnd
+import math
+
+def ga(init_pop, fitness_sort, 
+       fitness_func, pop_size, 
+       max_generation, elitism_factor,
+       crossover_op, mutation_op,
+       mutation_factor):
+
+    # Initialize the population
+    population = init_pop(pop_size)
+
+    # Will be True if the solution is found
+    solution_found = False
+    # Keeps track of what generation we are at
+    current_generation = 0
+
+    # Loops until we found the solution or we hit the max generation limit
+    while (not solution_found and current_generation < max_generation):
+        # Calculates fitness and returns the population sorted by fitness
+        sorted_population = fitness_sort(population, fitness_func)
+        print("POP", population)
+        # If the first object in the sorted population has fitness of 0
+        # we found the solution
+        if (population[0].fitness == 0):
+            found = True
+            break
+
+        # Calculates how many citizens will survive for the next generation
+        # Using the formula for percentage
+        # Part = (Whole * Percentage) / 100
+        # Rounding up for nice integer numbers :)
+        citizens_survived = math.ceil(((elitism_factor * pop_size) / 100))
+        # The new population is the top performing citizens (from 0-citizens survived)
+        new_population = sorted_population[0:citizens_survived]
+
+        # Count of how many offspring we need to create to repopulate the generation
+        mate_count = pop_size - citizens_survived
+        for i in range(mate_count):
+            # Choosing the randomly the parents to mate
+            parent_1 = np.random.choice(new_population, 1)[0]
+            parent_2 = np.random.choice(new_population, 1)[0]
+            # Creating the offspring using the parents genes
+            offspring = crossover_op(parent_1.chromosome, parent_2.chromosome)
+            # Inserting mutation (based on probability)
+            if rnd.random() < mutation_factor:
+                offspring.chromosome = mutation_op(offspring.chromosome)
+            # Adding the new offspring to the new population
+            new_population = np.append(new_population, offspring)
+
+        print("Gen = {} | Fitness = {}".format(current_generation, population[0].fitness))
+        # Making the new generation the current one
+        population = new_population
+        pop_size = np.size(population)
+        # Another generation passed
+        current_generation += 1
+
+    print(population)
 
 goal_state = np.array([1,2,3,4,5,6,7,8,0])
 
@@ -87,6 +145,8 @@ def init_pop(pop_size):
     population = np.append(population, initial_p_chromosome)
     # Adding all the possible moves to the init population
     population = np.append(population, possible_moves(initial_p_chromosome))
+    # Setting the initial population size
+    pop_size = np.size(pop_size)
     return population
 
 # The fitness function
@@ -95,24 +155,29 @@ def init_pop(pop_size):
 def fitness_func(puzzle_chromosome):
     sum = 0
     chromosome = puzzle_chromosome.chromosome
-    for i in np.size(chromosome):
+    for i in chromosome:
         sum += (chromosome[i] * i)
     return sum
 
 def fitness_sort(population, fitness_func):
     for pc in population:
-        pc.fitness = fitness_func(pc.chromosome)
+        pc.fitness = fitness_func(pc)
 
     return population[population.argsort()]
 
 def crossover_op(parent1, parent2):
-    from_parent1 = np.array([0, 0, 0, 0, 1, 1, 1, 1, 1])
-    np.random.shuffle(from_parent1)
-    from_parent2 = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1])
-    from_parent2 = from_parent2 - from_parent1
-    taken_from_p1 = parent1 * from_parent1
-    taken_from_p2 = parent2 * from_parent2
-    return PuzzleChromosome((taken_from_p1 + taken_from_p2), -1)
+    #new_chromosome = np.empty(0, dtype=int)
+    p1_chormo = parent1.chromosome
+    p2_chromo = parent2.chromosome
+    cross_point = rnd.randint(0, 8)
+    new_chromosome = p1_chormo[0:cross_point]
+    print(np.size(np.where(new_chromosome == 1)))
+    for i in range(0, 9):
+        if np.size(np.where(new_chromosome == p2_chromo[i])) == 0:
+            new_chromosome = np.append(new_chromosome, p2_chromo[i])
+    print("P1", p1_chormo)
+    print("P2", p2_chromo)
+    print("New", new_chromosome)
 
 def mutation_op(chromosome):
     gene_1 = rnd.randint(0, np.size(chromosome) - 1)
@@ -126,8 +191,16 @@ def mutation_op(chromosome):
 
 #c1 = np.array([0,1,2,3,4,5,6,7,8])
 #pc1 = PuzzleChromosome(c1, -1)
+
+#c2 = np.array([0,1,2,3,4,5,6,7,8])
+#np.random.shuffle(c2)
+#pc2 = PuzzleChromosome(c2, -1)
+
 #swap(c1, 0, 5)
 #print(possible_moves(pc1))
 #print(possible_moves(pc1)[0])
-print(init_pop(0))
+#print(init_pop(0))
 #possible_moves(c1)
+#crossover_op(pc1, pc2)
+
+ga(init_pop, fitness_sort, fitness_func, 0, 50, 0.1, crossover_op, mutation_op, 0.01)
